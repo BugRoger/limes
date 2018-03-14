@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -27,8 +28,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -263,9 +266,25 @@ func taskServe(config limes.Configuration, cluster *limes.Cluster, args []string
 		),
 	)
 
+	//shutdown HTTP server gracefully when SIGINT/SIGTERM is received
+	srv := &http.Server{Addr: config.API.ListenAddress}
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+		<-sig
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			util.LogError("error during HTTP server shutdown: " + err.Error())
+		}
+	}()
+
 	//start HTTP server
-	util.LogInfo("listening on " + config.API.ListenAddress)
-	return http.ListenAndServe(config.API.ListenAddress, nil)
+	util.LogInfo("listening on " + srv.Addr)
+	err := srv.ListenAndServe()
+	if err == http.ErrServerClosed {
+		err = nil
+	}
+	return err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
