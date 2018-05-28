@@ -62,6 +62,21 @@ Returns 200 (OK) on success. Result is a JSON document like:
               "usage": 2048
             }
           ],
+          "rates": [
+            {
+              "targetTypeURI": "service/storage/object/account/container",
+              "actions": [
+                {
+                  "name": "update",
+                  "limit": "2r/m"
+                },
+                {
+                  "name": "delete",
+                  "limit": "2r/30m"
+                }
+              ]                            
+            }
+          ],
           "scraped_at": 1486738599
         },
         {
